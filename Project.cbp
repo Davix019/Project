@@ -32,7 +32,9 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="chunk.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="tilemap.h" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

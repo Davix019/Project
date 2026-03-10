@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+*.depend
+# Code::Blocks specifikus fájlok
+*.layout
+bin/
+obj/
