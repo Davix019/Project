@@ -34,6 +34,8 @@
 		</Compiler>
 		<Unit filename="chunk.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="sfw.cpp" />
+		<Unit filename="sfw.h" />
 		<Unit filename="tilemap.h" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
