@@ -58,4 +58,11 @@ public:
 
         chunks[chunkY * widthInChunks + chunkX]->setTile(localX, localY, tileID);
     }
+
+    void render() {
+        int totalChunks = widthInChunks * heightInChunks;
+        for (int i = 0; i < totalChunks; ++i) {
+            chunks[i]->render();
+        }
+    }
 };

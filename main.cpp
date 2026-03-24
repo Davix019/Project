@@ -1,9 +1,11 @@
+#include "tilemap_application.h"
 
-#include "sfw.h"
-#include "tilemap.h"
+int main(int argc, char **argv) {
+    Application *application = memnew(TileMapApplication());
 
-int main()
-{
-    TileMap myMap(4, 4);
+    application->start_main_loop();
+
+    memdelete(application);
+
     return 0;
 }

@@ -31,12 +31,22 @@
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
+			<Add option="-D_WIN32_WINNT=0x0600" />
 		</Compiler>
+		<Linker>
+			<Add option="-mconsole" />
+			<Add library="gdi32" />
+			<Add library="ws2_32" />
+			<Add library="shlwapi" />
+			<Add library="opengl32" />
+		</Linker>
 		<Unit filename="chunk.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="sfw.cpp" />
 		<Unit filename="sfw.h" />
 		<Unit filename="tilemap.h" />
+		<Unit filename="tilemap_application.cpp" />
+		<Unit filename="tilemap_application.h" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

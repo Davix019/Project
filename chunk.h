@@ -76,4 +76,10 @@ public:
             }
         }
     }
+
+    void render() {
+        if (vertexCount > 0) {
+
+        }
+    }
 };
