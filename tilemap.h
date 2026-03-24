@@ -59,6 +59,39 @@ public:
         chunks[chunkY * widthInChunks + chunkX]->setTile(localX, localY, tileID);
     }
 
+    void save_map(String file_path) {
+        FileAccessRef file = FileAccess::create_and_open(file_path, FileAccess::WRITE);
+        if (file.is_valid()) {
+            file->store_32(widthInChunks);
+            file->store_32(heightInChunks);
+
+            for (int i = 0; i < widthInChunks * heightInChunks; ++i) {
+                for (int t = 0; t < CHUNK_SIZE * CHUNK_SIZE; ++t) {
+                    file->store_32(chunks[i]->tiles[t]);
+                }
+            }
+            file->close();
+        }
+    }
+
+    void load_map(String file_path) {
+        FileAccessRef file = FileAccess::create_and_open(file_path, FileAccess::READ);
+        if (file.is_valid()) {
+            int w = file->get_32();
+            int h = file->get_32();
+
+            if (w == widthInChunks && h == heightInChunks) {
+                for (int i = 0; i < widthInChunks * heightInChunks; ++i) {
+                    for (int t = 0; t < CHUNK_SIZE * CHUNK_SIZE; ++t) {
+                        chunks[i]->tiles[t] = file->get_32();
+                    }
+                    chunks[i]->generateMesh();
+                }
+            }
+            file->close();
+        }
+    }
+
     void render() {
         int totalChunks = widthInChunks * heightInChunks;
         for (int i = 0; i < totalChunks; ++i) {

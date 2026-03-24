@@ -41,15 +41,24 @@ public:
 
         Renderer::get_singleton()->camera_2d_reset();
 
-        ImGui::Begin("TileMap Szerkeszto");
-        ImGui::Text("Rajzolj a bal egergombbal a palyara!");
+        ImGui::Begin("TileMap Editor");
+        ImGui::Text("Draw on the map with the left mouse button!");
         ImGui::Separator();
-        ImGui::Text("Utolso kattintas: X: %d, Y: %d", lastClickedX, lastClickedY);
+        ImGui::Text("Last click: X: %d, Y: %d", lastClickedX, lastClickedY);
         ImGui::Separator();
-        ImGui::Text("Kivalasztott eszkoz:");
-        if (ImGui::Button("Fu (Zold) - 1")) currentTool = 1;
-        if (ImGui::Button("Fal (Szurke) - 2")) currentTool = 2;
-        if (ImGui::Button("Torles (Ures) - 0")) currentTool = 0;
+        ImGui::Text("Selected tool:");
+        if (ImGui::Button("Grass (Green) - 1")) currentTool = 1;
+        if (ImGui::Button("Wall (Gray) - 2")) currentTool = 2;
+        if (ImGui::Button("Erase (Empty) - 0")) currentTool = 0;
+
+        ImGui::Separator();
+        if (ImGui::Button("Save Map")) {
+            myMap->save_map("level_data.dat");
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Load Map")) {
+            myMap->load_map("level_data.dat");
+        }
         ImGui::End();
     }
 };

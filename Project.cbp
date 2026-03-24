@@ -47,6 +47,7 @@
 		<Unit filename="tilemap.h" />
 		<Unit filename="tilemap_application.cpp" />
 		<Unit filename="tilemap_application.h" />
+		<Unit filename="tilemap_scene.h" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>
