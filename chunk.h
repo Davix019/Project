@@ -23,6 +23,9 @@ public:
             tiles[i] = 1;
         }
 
+        _mesh.instance();
+        _mat.instance();
+
         generateMesh();
     }
 
@@ -39,15 +42,15 @@ public:
 
     void setTile(int localX, int localY, int tileID) {
         if (localX >= 0 && localX < CHUNK_SIZE && localY >= 0 && localY < CHUNK_SIZE) {
-            tiles[localY * CHUNK_SIZE + localX] = tileID;
-            generateMesh();
+            if (tiles[localY * CHUNK_SIZE + localX] != tileID) {
+                tiles[localY * CHUNK_SIZE + localX] = tileID;
+                generateMesh();
+            }
         }
     }
 
     void generateMesh() {
-        _mesh.instance();
-        _mat.instance();
-
+        _mesh->clear();
         _mesh->vertex_dimesions = 2;
 
         uint32_t vertexIndex = 0;
@@ -64,17 +67,17 @@ public:
                     float g = (tileID == 1) ? 1.0f : 0.5f;
                     float b = (tileID == 1) ? 0.0f : 0.5f;
 
+                    _mesh->add_color(Color(r, g, b));
                     _mesh->add_vertex2(startX, startY);
-                    _mesh->add_color(Color(r, g, b));
 
+                    _mesh->add_color(Color(r, g, b));
                     _mesh->add_vertex2(startX + TILE_SIZE, startY);
-                    _mesh->add_color(Color(r, g, b));
 
+                    _mesh->add_color(Color(r, g, b));
                     _mesh->add_vertex2(startX + TILE_SIZE, startY + TILE_SIZE);
-                    _mesh->add_color(Color(r, g, b));
 
-                    _mesh->add_vertex2(startX, startY + TILE_SIZE);
                     _mesh->add_color(Color(r, g, b));
+                    _mesh->add_vertex2(startX, startY + TILE_SIZE);
 
                     _mesh->add_triangle(vertexIndex + 0, vertexIndex + 1, vertexIndex + 2);
                     _mesh->add_triangle(vertexIndex + 0, vertexIndex + 2, vertexIndex + 3);
