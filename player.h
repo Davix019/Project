@@ -7,7 +7,9 @@ public:
     Vector2 position;
     float speed;
     float baseSpeed;
-    float dashTimer;
+    float dashActiveTimer;
+    float cooldownTimer;
+
     Ref<Mesh> _mesh;
     Ref<ColorMaterial2D> _mat;
 
@@ -15,7 +17,8 @@ public:
         position = Vector2(startX, startY);
         baseSpeed = 250.0f;
         speed = baseSpeed;
-        dashTimer = 0.0f;
+        dashActiveTimer = 0.0f;
+        cooldownTimer = 0.0f;
         _mesh.instance();
         _mat.instance();
     }
@@ -23,7 +26,8 @@ public:
     void reset(float startX, float startY) {
         position = Vector2(startX, startY);
         speed = baseSpeed;
-        dashTimer = 0.0f;
+        dashActiveTimer = 0.0f;
+        cooldownTimer = 0.0f;
     }
 
     void update(float dt, TileMap* map) {
@@ -35,12 +39,19 @@ public:
         if (input->is_key_pressed(KEY_A)) dir.x -= 1;
         if (input->is_key_pressed(KEY_D)) dir.x += 1;
 
-        if (dashTimer > 0) {
-            dashTimer -= dt;
-            if (dashTimer <= 0) speed = baseSpeed;
-        } else if (input->is_key_pressed(KEY_SPACE)) {
-            dashTimer = 0.2f;
-            speed = 700.0f;
+        if (dashActiveTimer > 0) {
+            dashActiveTimer -= dt;
+            if (dashActiveTimer <= 0) {
+                speed = baseSpeed;
+                cooldownTimer = 5.0f;
+            }
+        } else {
+            if (cooldownTimer > 0) {
+                cooldownTimer -= dt;
+            } else if (input->is_key_pressed(KEY_SPACE)) {
+                dashActiveTimer = 3.0f;
+                speed = 600.0f;
+            }
         }
 
         if (dir.length_squared() > 0) {
@@ -61,13 +72,15 @@ public:
         _mesh->vertex_dimesions = 2;
         float size = 20.0f;
 
-        _mesh->add_color(Color(0, 0, 1));
+        Color pColor = (dashActiveTimer > 0) ? Color(0, 0.8, 1) : Color(0, 0, 1);
+
+        _mesh->add_color(pColor);
         _mesh->add_vertex2(position.x - size/2, position.y - size/2);
-        _mesh->add_color(Color(0, 0, 1));
+        _mesh->add_color(pColor);
         _mesh->add_vertex2(position.x + size/2, position.y - size/2);
-        _mesh->add_color(Color(0, 0, 1));
+        _mesh->add_color(pColor);
         _mesh->add_vertex2(position.x + size/2, position.y + size/2);
-        _mesh->add_color(Color(0, 0, 1));
+        _mesh->add_color(pColor);
         _mesh->add_vertex2(position.x - size/2, position.y + size/2);
 
         _mesh->add_triangle(0, 2, 1);
