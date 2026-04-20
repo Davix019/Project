@@ -3,66 +3,107 @@
 #include "tilemap.h"
 #include "player.h"
 
+struct PathNode {
+    int x, y;
+    int parent_idx;
+};
+
 class Enemy {
 public:
     Vector2 position;
-    Vector2 lastPosition;
     float speed;
-    float stuckTimer;
-    float sideStepTimer;
-    Vector2 sideDir;
-
     Ref<Mesh> _mesh;
     Ref<ColorMaterial2D> _mat;
 
     Enemy(float startX, float startY) {
         position = Vector2(startX, startY);
-        lastPosition = position;
         speed = 120.0f;
-        stuckTimer = 0.0f;
-        sideStepTimer = 0.0f;
         _mesh.instance();
         _mat.instance();
     }
 
     void reset(float startX, float startY) {
         position = Vector2(startX, startY);
-        lastPosition = position;
-        stuckTimer = 0.0f;
-        sideStepTimer = 0.0f;
     }
 
     void update(float dt, TileMap* map, Player* player) {
-        if (position.distance_to(lastPosition) < 0.5f) {
-            stuckTimer += dt;
-        } else {
-            stuckTimer = 0.0f;
+        int ex = (int)(position.x / 32.0f);
+        int ey = (int)(position.y / 32.0f);
+        int px = (int)(player->position.x / 32.0f);
+        int py = (int)(player->position.y / 32.0f);
+
+        Vector2 target_pos = player->position;
+
+        if (ex != px || ey != py) {
+            const int MAX_Q = 2048;
+            PathNode queue[2048];
+            int q_head = 0, q_tail = 0;
+
+            const int WINDOW = 50;
+            const int HALF = 25;
+            bool visited[50][50];
+
+            for (int i = 0; i < 50; ++i) {
+                for (int j = 0; j < 50; ++j) {
+                    visited[i][j] = false;
+                }
+            }
+
+            queue[q_tail++] = {ex, ey, -1};
+            visited[HALF][HALF] = true;
+
+            int target_idx = -1;
+
+            int dx[] = {0, 1, 0, -1, 1, -1, 1, -1};
+            int dy[] = {-1, 0, 1, 0, 1, -1, -1, 1};
+
+            while (q_head < q_tail && q_tail < MAX_Q) {
+                PathNode curr = queue[q_head];
+
+                if (curr.x == px && curr.y == py) {
+                    target_idx = q_head;
+                    break;
+                }
+
+                for (int i = 0; i < 8; ++i) {
+                    int nx = curr.x + dx[i];
+                    int ny = curr.y + dy[i];
+
+                    int vx = nx - ex + HALF;
+                    int vy = ny - ey + HALF;
+
+                    if (vx >= 0 && vx < WINDOW && vy >= 0 && vy < WINDOW) {
+                        if (!visited[vx][vy]) {
+                            visited[vx][vy] = true;
+
+                            int tile = map->getTile(nx, ny);
+                            if (tile != 2 && tile != -1) {
+                                if (i >= 4) {
+                                    if (map->getTile(curr.x, ny) == 2 || map->getTile(nx, curr.y) == 2) {
+                                        continue;
+                                    }
+                                }
+                                queue[q_tail++] = {nx, ny, q_head};
+                                if (q_tail >= MAX_Q) break;
+                            }
+                        }
+                    }
+                }
+                q_head++;
+            }
+
+            if (target_idx != -1) {
+                int curr_idx = target_idx;
+                while (queue[curr_idx].parent_idx != 0) {
+                    curr_idx = queue[curr_idx].parent_idx;
+                }
+                target_pos = Vector2(queue[curr_idx].x * 32.0f + 16.0f, queue[curr_idx].y * 32.0f + 16.0f);
+            }
         }
-        lastPosition = position;
 
-        Vector2 dir;
-        if (stuckTimer > 0.5f && sideStepTimer <= 0.0f) {
-            sideStepTimer = 0.8f;
-            Vector2 toPlayer = (player->position - position).normalized();
-            sideDir = Vector2(-toPlayer.y, toPlayer.x);
-        }
-
-        if (sideStepTimer > 0.0f) {
-            sideStepTimer -= dt;
-            dir = sideDir;
-        } else {
-            dir = (player->position - position).normalized();
-        }
-
-        Vector2 newPos = position + dir * speed * dt;
-        int tileX = (int)(newPos.x / 32.0f);
-        int tileY = (int)(newPos.y / 32.0f);
-
-        if (map->getTile(tileX, tileY) != 2) {
-            position = newPos;
-        } else {
-            sideStepTimer = 0.5f;
-            sideDir = -sideDir;
+        Vector2 dir = target_pos - position;
+        if (dir.length_squared() > 1.0f) {
+            position = position + dir.normalized() * speed * dt;
         }
     }
 
@@ -70,6 +111,7 @@ public:
         _mesh->clear();
         _mesh->vertex_dimesions = 2;
         float size = 20.0f;
+
         _mesh->add_color(Color(1, 0, 0));
         _mesh->add_vertex2(position.x - size/2, position.y - size/2);
         _mesh->add_color(Color(1, 0, 0));
@@ -78,9 +120,11 @@ public:
         _mesh->add_vertex2(position.x + size/2, position.y + size/2);
         _mesh->add_color(Color(1, 0, 0));
         _mesh->add_vertex2(position.x - size/2, position.y + size/2);
+
         _mesh->add_triangle(0, 2, 1);
         _mesh->add_triangle(0, 3, 2);
         _mesh->upload();
+
         _mat->bind();
         _mesh->render();
     }

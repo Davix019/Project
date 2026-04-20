@@ -71,7 +71,7 @@ public:
         Renderer::get_singleton()->camera_2d_projection_set_to_window();
 
         if (currentState == STATE_PLAY) {
-            float dt = 0.016f;
+            float dt = ImGui::GetIO().DeltaTime;;
             scoreTimer += dt;
             if (scoreTimer >= 1.0f) {
                 score += 10;
