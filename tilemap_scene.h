@@ -10,7 +10,8 @@ enum GameState {
     STATE_MENU,
     STATE_PLAY,
     STATE_EDITOR,
-    STATE_GAMEOVER
+    STATE_GAMEOVER,
+    STATE_WIN
 };
 
 class TileMapScene : public Scene {
@@ -22,29 +23,20 @@ public:
     Enemy* myEnemy;
     GameState currentState;
     int currentTool;
-    int lastClickedX;
-    int lastClickedY;
 
-    int score;
-    int highScore;
-    float scoreTimer;
-    int currentLevel;
+    int keysCollected;
+    int keysNeeded;
+    int currentLevel; // 0: Custom, 1: Level 1, 2: Level 2...
 
     TileMapScene() {
         myMap = new TileMap(20, 15);
-        myPlayer = new Player(100.0f, 100.0f);
-        myEnemy = new Enemy(400.0f, 400.0f);
+        myPlayer = new Player(64.0f, 64.0f);
+        myEnemy = new Enemy(500.0f, 400.0f);
         currentState = STATE_MENU;
         currentTool = 1;
-        lastClickedX = -1;
-        lastClickedY = -1;
-
-        score = 0;
-        highScore = 0;
-        scoreTimer = 0.0f;
+        keysCollected = 0;
+        keysNeeded = 0;
         currentLevel = 0;
-
-        loadHighScore();
     }
 
     ~TileMapScene() {
@@ -53,51 +45,48 @@ public:
         delete myMap;
     }
 
-    void loadHighScore() {
-        FileAccessRef file = FileAccess::create_and_open("highscore.dat", FileAccess::READ);
-        if (file.is_valid()) {
-            highScore = file->get_32();
-            file->close();
+    void setupCampaignLevel(int lvl) {
+        currentLevel = lvl;
+        keysCollected = 0;
+
+        // Reset map to grass (1)
+        for (int y = 0; y < 15; ++y) {
+            for (int x = 0; x < 20; ++x) {
+                myMap->setTile(x, y, 1);
+            }
         }
-    }
 
-    void saveHighScore() {
-        FileAccessRef file = FileAccess::create_and_open("highscore.dat", FileAccess::WRITE);
-        if (file.is_valid()) {
-            file->store_32(highScore);
-            file->close();
+        if (lvl == 1) {
+            keysNeeded = 1;
+            // Walls
+            for(int x=5; x<15; ++x) myMap->setTile(x, 7, 2);
+            // Key (Tile 3)
+            myMap->setTile(10, 3, 3);
+            // Exit (Tile 4)
+            myMap->setTile(18, 13, 4);
+            myPlayer->reset(64, 64);
+            myEnemy->reset(500, 400);
         }
-    }
-
-    void startLevel(int level) {
-        currentLevel = level;
-        myPlayer->reset(100.0f, 100.0f);
-        myEnemy->reset(400.0f, 400.0f);
-        score = 0;
-        scoreTimer = 0.0f;
-
-        if (currentLevel == 0) {
-            myMap->load_map("level_data.dat");
-        } else {
-            String levelName = "level1.dat";
-            if (level == 2) levelName = "level2.dat";
-            if (level == 3) levelName = "level3.dat";
-            if (level == 4) levelName = "level4.dat";
-            if (level == 5) levelName = "level5.dat";
-            myMap->load_map(levelName);
+        else if (lvl == 2) {
+            keysNeeded = 2;
+            // Simple Maze
+            for(int y=0; y<10; ++y) myMap->setTile(8, y, 2);
+            for(int y=5; y<15; ++y) myMap->setTile(14, y, 2);
+            // Keys
+            myMap->setTile(2, 12, 3);
+            myMap->setTile(18, 2, 3);
+            // Exit
+            myMap->setTile(18, 13, 4);
+            myPlayer->reset(64, 64);
+            myEnemy->reset(500, 100);
         }
         currentState = STATE_PLAY;
     }
 
     void paint(Vector2 pos) {
         if (currentState != STATE_EDITOR) return;
-
         int tileX = (int)(pos.x / 32.0f);
         int tileY = (int)(pos.y / 32.0f);
-
-        lastClickedX = tileX;
-        lastClickedY = tileY;
-
         myMap->setTile(tileX, tileY, currentTool);
     }
 
@@ -106,50 +95,54 @@ public:
 
         if (currentState == STATE_PLAY) {
             float dt = ImGui::GetIO().DeltaTime;
-
-            scoreTimer += dt;
-            if (scoreTimer >= 1.0f) {
-                score += 10;
-                scoreTimer = 0.0f;
-            }
-
             myPlayer->update(dt, myMap);
             myEnemy->update(dt, myMap, myPlayer);
 
+            // Collision with Enemy
             if (myPlayer->position.distance_to(myEnemy->position) < 20.0f) {
                 currentState = STATE_GAMEOVER;
-                if (score > highScore) {
-                    highScore = score;
-                    saveHighScore();
-                }
+            }
+
+            // Tile interaction
+            int tx = (int)(myPlayer->position.x / 32.0f);
+            int ty = (int)(myPlayer->position.y / 32.0f);
+            int currentTile = myMap->getTile(tx, ty);
+
+            if (currentTile == 3) { // Collect Key
+                myMap->setTile(tx, ty, 1);
+                keysCollected++;
+            }
+            if (currentTile == 4 && keysCollected >= keysNeeded) { // Reach Exit
+                if (currentLevel == 1) setupCampaignLevel(2);
+                else currentState = STATE_WIN;
             }
         }
 
         if (currentState == STATE_PLAY || currentState == STATE_EDITOR) {
             myMap->render();
-        }
-
-        if (currentState == STATE_PLAY) {
-            myPlayer->render();
-            myEnemy->render();
+            if (currentState == STATE_PLAY) {
+                myPlayer->render();
+                myEnemy->render();
+            }
         }
 
         Renderer::get_singleton()->camera_2d_reset();
 
         if (currentState == STATE_MENU) {
             ImGui::Begin("Main Menu");
-            ImGui::Text("High Score: %d", highScore);
-            ImGui::Separator();
-
-            ImGui::Text("--- CAMPAIGN MODE ---");
-            if (ImGui::Button("Start Campaign (Level 1)")) {
-                startLevel(1);
-            }
+            ImGui::Text("--- CAMPAIGN ---");
+            if (ImGui::Button("Start Level 1")) setupCampaignLevel(1);
 
             ImGui::Separator();
-            ImGui::Text("--- CUSTOM GAMES ---");
-            if (ImGui::Button("Play Custom Map")) {
-                startLevel(0);
+            ImGui::Text("--- CUSTOM ---");
+            if (ImGui::Button("Play Editor Map")) {
+                currentLevel = 0;
+                keysCollected = 0;
+                keysNeeded = 0; // No keys needed for custom map by default
+                myMap->load_map("level_data.dat");
+                myPlayer->reset(100, 100);
+                myEnemy->reset(400, 400);
+                currentState = STATE_PLAY;
             }
             if (ImGui::Button("Level Editor")) {
                 myMap->load_map("level_data.dat");
@@ -163,6 +156,8 @@ public:
             ImGui::Separator();
             if (ImGui::Button("Grass (1)")) currentTool = 1;
             if (ImGui::Button("Wall (2)")) currentTool = 2;
+            if (ImGui::Button("Key (3)")) currentTool = 3;
+            if (ImGui::Button("Exit (4)")) currentTool = 4;
             if (ImGui::Button("Erase (0)")) currentTool = 0;
             ImGui::Separator();
             if (ImGui::Button("Save Map")) myMap->save_map("level_data.dat");
@@ -171,28 +166,36 @@ public:
         }
         else if (currentState == STATE_PLAY) {
             ImGui::Begin("Game Stats");
-            if (currentLevel > 0) {
-                ImGui::Text("Campaign - Level: %d", currentLevel);
-            } else {
-                ImGui::Text("Custom Map");
+            if (currentLevel > 0) ImGui::Text("Level: %d", currentLevel);
+            else ImGui::Text("Custom Map");
+
+            ImGui::Text("Keys: %d / %d", keysCollected, keysNeeded);
+            if (keysCollected >= keysNeeded && currentLevel > 0) {
+                ImGui::TextColored(ImVec4(0,1,0,1), "EXIT OPEN!");
             }
-            ImGui::Text("Current Score: %d", score);
             ImGui::Separator();
-            if (myPlayer->dashActiveTimer > 0) {
-                ImGui::Text("DASH ACTIVE: %.1fs", myPlayer->dashActiveTimer);
-            } else if (myPlayer->cooldownTimer > 0) {
-                ImGui::Text("Dash Cooldown: %.1fs", myPlayer->cooldownTimer);
-            } else {
-                ImGui::Text("DASH READY (Press SPACE)");
-            }
+            if (myPlayer->dashActiveTimer > 0) ImGui::Text("DASH ACTIVE");
+            else if (myPlayer->cooldownTimer > 0) ImGui::Text("Cooldown: %.1fs", myPlayer->cooldownTimer);
+            else ImGui::Text("DASH READY (SPACE)");
             ImGui::End();
         }
         else if (currentState == STATE_GAMEOVER) {
             ImGui::Begin("Game Over");
             ImGui::Text("You were caught!");
-            ImGui::Text("Final Score: %d", score);
-            ImGui::Separator();
-            if (ImGui::Button("Retry")) startLevel(currentLevel);
+            if (ImGui::Button("Retry")) {
+                if (currentLevel == 0) {
+                    myMap->load_map("level_data.dat");
+                    myPlayer->reset(100, 100);
+                    myEnemy->reset(400, 400);
+                    currentState = STATE_PLAY;
+                } else setupCampaignLevel(currentLevel);
+            }
+            if (ImGui::Button("Main Menu")) currentState = STATE_MENU;
+            ImGui::End();
+        }
+        else if (currentState == STATE_WIN) {
+            ImGui::Begin("Victory!");
+            ImGui::Text("Campaign Completed!");
             if (ImGui::Button("Main Menu")) currentState = STATE_MENU;
             ImGui::End();
         }

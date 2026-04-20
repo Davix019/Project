@@ -63,24 +63,27 @@ public:
                     float startX = (chunkX * CHUNK_SIZE + x) * TILE_SIZE;
                     float startY = (chunkY * CHUNK_SIZE + y) * TILE_SIZE;
 
-                    float r = (tileID == 1) ? 0.0f : 0.5f;
-                    float g = (tileID == 1) ? 1.0f : 0.5f;
-                    float b = (tileID == 1) ? 0.0f : 0.5f;
+                    Color tileColor;
+                    if (tileID == 1) tileColor = Color(0.0f, 0.6f, 0.0f);
+                    else if (tileID == 2) tileColor = Color(0.5f, 0.5f, 0.5f);
+                    else if (tileID == 3) tileColor = Color(1.0f, 0.8f, 0.0f);
+                    else if (tileID == 4) tileColor = Color(0.6f, 0.0f, 0.8f);
+                    else tileColor = Color(0.0f, 0.0f, 0.0f);
 
-                    _mesh->add_color(Color(r, g, b));
+                    _mesh->add_color(tileColor);
                     _mesh->add_vertex2(startX, startY);
 
-                    _mesh->add_color(Color(r, g, b));
+                    _mesh->add_color(tileColor);
                     _mesh->add_vertex2(startX + TILE_SIZE, startY);
 
-                    _mesh->add_color(Color(r, g, b));
+                    _mesh->add_color(tileColor);
                     _mesh->add_vertex2(startX + TILE_SIZE, startY + TILE_SIZE);
 
-                    _mesh->add_color(Color(r, g, b));
+                    _mesh->add_color(tileColor);
                     _mesh->add_vertex2(startX, startY + TILE_SIZE);
 
-                    _mesh->add_triangle(vertexIndex + 0, vertexIndex + 1, vertexIndex + 2);
-                    _mesh->add_triangle(vertexIndex + 0, vertexIndex + 2, vertexIndex + 3);
+                    _mesh->add_triangle(vertexIndex + 0, vertexIndex + 2, vertexIndex + 1);
+                    _mesh->add_triangle(vertexIndex + 0, vertexIndex + 3, vertexIndex + 2);
 
                     vertexIndex += 4;
                 }
