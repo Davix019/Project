@@ -3,24 +3,32 @@
 
 #include "sfw.h"
 #include "tilemap.h"
+#include "player.h"
+#include "enemy.h"
 
 class TileMapScene : public Scene {
     SFW_OBJECT(TileMapScene, Scene);
 
 public:
     TileMap* myMap;
+    Player* myPlayer;
+    Enemy* myEnemy;
     int currentTool;
     int lastClickedX;
     int lastClickedY;
 
     TileMapScene() {
         myMap = new TileMap(4, 4);
+        myPlayer = new Player(100.0f, 100.0f);
+        myEnemy = new Enemy(400.0f, 400.0f);
         currentTool = 1;
         lastClickedX = -1;
         lastClickedY = -1;
     }
 
     ~TileMapScene() {
+        delete myEnemy;
+        delete myPlayer;
         delete myMap;
     }
 
@@ -37,7 +45,16 @@ public:
     virtual void render() {
         Renderer::get_singleton()->camera_2d_projection_set_to_window();
 
+        myPlayer->update(0.016f, myMap);
+        myEnemy->update(0.016f, myMap, myPlayer);
+
+        if (myPlayer->position.distance_to(myEnemy->position) < 20.0f) {
+            myPlayer->position = Vector2(100.0f, 100.0f);
+        }
+
         myMap->render();
+        myPlayer->render();
+        myEnemy->render();
 
         Renderer::get_singleton()->camera_2d_reset();
 
@@ -52,13 +69,9 @@ public:
         if (ImGui::Button("Erase (Empty) - 0")) currentTool = 0;
 
         ImGui::Separator();
-        if (ImGui::Button("Save Map")) {
-            myMap->save_map("level_data.dat");
-        }
+        if (ImGui::Button("Save Map")) myMap->save_map("level_data.dat");
         ImGui::SameLine();
-        if (ImGui::Button("Load Map")) {
-            myMap->load_map("level_data.dat");
-        }
+        if (ImGui::Button("Load Map")) myMap->load_map("level_data.dat");
         ImGui::End();
     }
 };
