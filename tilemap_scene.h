@@ -20,18 +20,22 @@ class TileMapScene : public Scene {
 public:
     TileMap* myMap;
     Player* myPlayer;
-    Enemy* myEnemy;
+    Scout* myScout;
+    Tank* myTank;
+
     GameState currentState;
     int currentTool;
 
     int keysCollected;
     int keysNeeded;
-    int currentLevel; // 0: Custom, 1: Level 1, 2: Level 2...
+    int currentLevel;
 
     TileMapScene() {
         myMap = new TileMap(20, 15);
         myPlayer = new Player(64.0f, 64.0f);
-        myEnemy = new Enemy(500.0f, 400.0f);
+        myScout = new Scout();
+        myTank = new Tank();
+
         currentState = STATE_MENU;
         currentTool = 1;
         keysCollected = 0;
@@ -40,7 +44,8 @@ public:
     }
 
     ~TileMapScene() {
-        delete myEnemy;
+        delete myScout;
+        delete myTank;
         delete myPlayer;
         delete myMap;
     }
@@ -49,7 +54,6 @@ public:
         currentLevel = lvl;
         keysCollected = 0;
 
-        // Reset map to grass (1)
         for (int y = 0; y < 15; ++y) {
             for (int x = 0; x < 20; ++x) {
                 myMap->setTile(x, y, 1);
@@ -58,27 +62,25 @@ public:
 
         if (lvl == 1) {
             keysNeeded = 1;
-            // Walls
             for(int x=5; x<15; ++x) myMap->setTile(x, 7, 2);
-            // Key (Tile 3)
             myMap->setTile(10, 3, 3);
-            // Exit (Tile 4)
             myMap->setTile(18, 13, 4);
+
             myPlayer->reset(64, 64);
-            myEnemy->reset(500, 400);
+            myScout->reset(500, 400, true);
+            myTank->reset(0, 0, false);
         }
         else if (lvl == 2) {
             keysNeeded = 2;
-            // Simple Maze
             for(int y=0; y<10; ++y) myMap->setTile(8, y, 2);
             for(int y=5; y<15; ++y) myMap->setTile(14, y, 2);
-            // Keys
             myMap->setTile(2, 12, 3);
             myMap->setTile(18, 2, 3);
-            // Exit
             myMap->setTile(18, 13, 4);
+
             myPlayer->reset(64, 64);
-            myEnemy->reset(500, 100);
+            myScout->reset(500, 100, true);
+            myTank->reset(300, 400, true);
         }
         currentState = STATE_PLAY;
     }
@@ -95,24 +97,27 @@ public:
 
         if (currentState == STATE_PLAY) {
             float dt = ImGui::GetIO().DeltaTime;
-            myPlayer->update(dt, myMap);
-            myEnemy->update(dt, myMap, myPlayer);
 
-            // Collision with Enemy
-            if (myPlayer->position.distance_to(myEnemy->position) < 20.0f) {
+            myPlayer->update(dt, myMap);
+            myScout->update(dt, myMap, myPlayer);
+            myTank->update(dt, myMap, myPlayer);
+
+            bool hitScout = myScout->active && myPlayer->position.distance_to(myScout->position) < 20.0f;
+            bool hitTank = myTank->active && myPlayer->position.distance_to(myTank->position) < 25.0f;
+
+            if (hitScout || hitTank) {
                 currentState = STATE_GAMEOVER;
             }
 
-            // Tile interaction
             int tx = (int)(myPlayer->position.x / 32.0f);
             int ty = (int)(myPlayer->position.y / 32.0f);
             int currentTile = myMap->getTile(tx, ty);
 
-            if (currentTile == 3) { // Collect Key
+            if (currentTile == 3) {
                 myMap->setTile(tx, ty, 1);
                 keysCollected++;
             }
-            if (currentTile == 4 && keysCollected >= keysNeeded) { // Reach Exit
+            if (currentTile == 4 && keysCollected >= keysNeeded) {
                 if (currentLevel == 1) setupCampaignLevel(2);
                 else currentState = STATE_WIN;
             }
@@ -122,7 +127,8 @@ public:
             myMap->render();
             if (currentState == STATE_PLAY) {
                 myPlayer->render();
-                myEnemy->render();
+                myScout->render();
+                myTank->render();
             }
         }
 
@@ -138,10 +144,13 @@ public:
             if (ImGui::Button("Play Editor Map")) {
                 currentLevel = 0;
                 keysCollected = 0;
-                keysNeeded = 0; // No keys needed for custom map by default
+                keysNeeded = 0;
                 myMap->load_map("level_data.dat");
+
                 myPlayer->reset(100, 100);
-                myEnemy->reset(400, 400);
+                myScout->reset(400, 400, true);
+                myTank->reset(500, 500, true);
+
                 currentState = STATE_PLAY;
             }
             if (ImGui::Button("Level Editor")) {
@@ -186,7 +195,8 @@ public:
                 if (currentLevel == 0) {
                     myMap->load_map("level_data.dat");
                     myPlayer->reset(100, 100);
-                    myEnemy->reset(400, 400);
+                    myScout->reset(400, 400, true);
+                    myTank->reset(500, 500, true);
                     currentState = STATE_PLAY;
                 } else setupCampaignLevel(currentLevel);
             }

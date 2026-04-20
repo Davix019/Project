@@ -8,25 +8,30 @@ struct PathNode {
     int parent_idx;
 };
 
-class Enemy {
+class EnemyBase {
 public:
     Vector2 position;
     float speed;
+    float size;
+    Color color;
+    bool active;
     Ref<Mesh> _mesh;
     Ref<ColorMaterial2D> _mat;
 
-    Enemy(float startX, float startY) {
-        position = Vector2(startX, startY);
-        speed = 120.0f;
+    EnemyBase() {
+        active = false;
         _mesh.instance();
         _mat.instance();
     }
 
-    void reset(float startX, float startY) {
+    void reset(float startX, float startY, bool isActive) {
         position = Vector2(startX, startY);
+        active = isActive;
     }
 
     void update(float dt, TileMap* map, Player* player) {
+        if (!active) return;
+
         int ex = (int)(position.x / 32.0f);
         int ey = (int)(position.y / 32.0f);
         int px = (int)(player->position.x / 32.0f);
@@ -108,17 +113,18 @@ public:
     }
 
     void render() {
+        if (!active) return;
+
         _mesh->clear();
         _mesh->vertex_dimesions = 2;
-        float size = 20.0f;
 
-        _mesh->add_color(Color(1, 0, 0));
+        _mesh->add_color(color);
         _mesh->add_vertex2(position.x - size/2, position.y - size/2);
-        _mesh->add_color(Color(1, 0, 0));
+        _mesh->add_color(color);
         _mesh->add_vertex2(position.x + size/2, position.y - size/2);
-        _mesh->add_color(Color(1, 0, 0));
+        _mesh->add_color(color);
         _mesh->add_vertex2(position.x + size/2, position.y + size/2);
-        _mesh->add_color(Color(1, 0, 0));
+        _mesh->add_color(color);
         _mesh->add_vertex2(position.x - size/2, position.y + size/2);
 
         _mesh->add_triangle(0, 2, 1);
@@ -127,5 +133,23 @@ public:
 
         _mat->bind();
         _mesh->render();
+    }
+};
+
+class Scout : public EnemyBase {
+public:
+    Scout() {
+        speed = 120.0f;
+        size = 20.0f;
+        color = Color(1.0f, 0.0f, 0.0f);
+    }
+};
+
+class Tank : public EnemyBase {
+public:
+    Tank() {
+        speed = 50.0f;
+        size = 30.0f;
+        color = Color(0.5f, 0.0f, 0.0f);
     }
 };
