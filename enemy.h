@@ -12,9 +12,13 @@ public:
 
     Enemy(float startX, float startY) {
         position = Vector2(startX, startY);
-        speed = 100.0f;
+        speed = 120.0f;
         _mesh.instance();
         _mat.instance();
+    }
+
+    void reset(float startX, float startY) {
+        position = Vector2(startX, startY);
     }
 
     void update(float dt, TileMap* map, Player* player) {

@@ -6,14 +6,24 @@ class Player {
 public:
     Vector2 position;
     float speed;
+    float baseSpeed;
+    float dashTimer;
     Ref<Mesh> _mesh;
     Ref<ColorMaterial2D> _mat;
 
     Player(float startX, float startY) {
         position = Vector2(startX, startY);
-        speed = 250.0f;
+        baseSpeed = 250.0f;
+        speed = baseSpeed;
+        dashTimer = 0.0f;
         _mesh.instance();
         _mat.instance();
+    }
+
+    void reset(float startX, float startY) {
+        position = Vector2(startX, startY);
+        speed = baseSpeed;
+        dashTimer = 0.0f;
     }
 
     void update(float dt, TileMap* map) {
@@ -24,6 +34,14 @@ public:
         if (input->is_key_pressed(KEY_S)) dir.y += 1;
         if (input->is_key_pressed(KEY_A)) dir.x -= 1;
         if (input->is_key_pressed(KEY_D)) dir.x += 1;
+
+        if (dashTimer > 0) {
+            dashTimer -= dt;
+            if (dashTimer <= 0) speed = baseSpeed;
+        } else if (input->is_key_pressed(KEY_SPACE)) {
+            dashTimer = 0.2f;
+            speed = 700.0f;
+        }
 
         if (dir.length_squared() > 0) {
             dir.normalize();
