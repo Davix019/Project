@@ -41,7 +41,9 @@
 			<Add library="opengl32" />
 		</Linker>
 		<Unit filename="chunk.h" />
+		<Unit filename="enemy.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="player.h" />
 		<Unit filename="sfw.cpp" />
 		<Unit filename="sfw.h" />
 		<Unit filename="tilemap.h" />
